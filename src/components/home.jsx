@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogTitle, TextField } from "@mui/material";
-import { useState, useEffect } from "react"; // Added useEffect for URL handling
+import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import { ERROR, PLAYLIST, SEGMENT } from "../constant";
 import parseHls from "../lib/parseHls";
@@ -13,12 +13,13 @@ export default function HomePage({ seturl, setheaders }) {
   const [customHeadersRender, setcustomHeadersRender] = useState(false);
   const [customHeaders, setcustomHeaders] = useState({});
 
-  // Fetch URL from query string if available
+  // Fetch URL from query string and automatically trigger download
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const urlFromQuery = params.get('url');
+    const urlFromQuery = params.get("url");
     if (urlFromQuery) {
       settext(urlFromQuery); // Automatically set URL from query string
+      validateAndSetUrl(); // Automatically trigger download after setting URL
     }
   }, []);
 
