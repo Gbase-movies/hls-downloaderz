@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogTitle, TextField } from "@mui/material";
-import { useState, useEffect } from "react";
+import { useState, useEffect } from "react"; // Added useEffect for URL handling
 import { toast } from "react-hot-toast";
 import { ERROR, PLAYLIST, SEGMENT } from "../constant";
 import parseHls from "../lib/parseHls";
@@ -13,13 +13,13 @@ export default function HomePage({ seturl, setheaders }) {
   const [customHeadersRender, setcustomHeadersRender] = useState(false);
   const [customHeaders, setcustomHeaders] = useState({});
 
-  // Fetch URL from query string and automatically trigger download
+  // Fetch URL from query string if available and auto trigger download
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const urlFromQuery = params.get("url");
+    const urlFromQuery = params.get('url');
     if (urlFromQuery) {
       settext(urlFromQuery); // Automatically set URL from query string
-      validateAndSetUrl(); // Automatically trigger download after setting URL
+      validateAndSetUrl(urlFromQuery); // Auto trigger download
     }
   }, []);
 
@@ -35,9 +35,10 @@ export default function HomePage({ seturl, setheaders }) {
     setplaylist();
   }
 
-  async function validateAndSetUrl() {
+  async function validateAndSetUrl(urlToValidate) {
+    const url = urlToValidate || text; // Use the passed URL or the current input
     toast.loading(`Validating...`, { duration: 800 });
-    let data = await parseHls({ hlsUrl: text, headers: customHeaders });
+    let data = await parseHls({ hlsUrl: url, headers: customHeaders });
     if (!data) {
       toast.error(`Invalid url, Content possibly not parsed!`);
       return;
@@ -51,7 +52,7 @@ export default function HomePage({ seturl, setheaders }) {
         setplaylist(data.data);
       }
     } else if (data.type === SEGMENT) {
-      seturl(text);
+      seturl(url);
       setheaders(customHeaders);
     }
   }
