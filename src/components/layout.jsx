@@ -48,7 +48,7 @@ export default function Layout({ children }) {
           </a>
 
           <a
-            href="https://www.producthunt.com/posts/hls-downloader-1?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-hls-downloader-1"
+            href="https://gd.swaflix.xyz"
             target="_blank"
             rel="noopener"
           >
