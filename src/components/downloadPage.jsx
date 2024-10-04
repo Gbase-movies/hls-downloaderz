@@ -130,9 +130,9 @@ export default function DownloadPage({ url, headers = {} }) {
 
       console.log("successSegments", successSegments);
 
-      setadditionalMessage(`[INFO] Stiching segments started`);
+      setadditionalMessage(` PLEASE WAIT..... `);
       setdownloadState(SEGMENT_STICHING);
-      await sleep(100); // wait for state to update
+      await sleep(10); // wait for state to update
 
       await ffmpeg.run(
         "-i",
