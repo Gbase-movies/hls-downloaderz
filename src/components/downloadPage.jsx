@@ -132,7 +132,7 @@ export default function DownloadPage({ url, headers = {} }) {
 
       setadditionalMessage(` PLEASE WAIT..... `);
       setdownloadState(SEGMENT_STICHING);
-      await sleep(10); // wait for state to update
+      await sleep(100); // wait for state to update
 
       await ffmpeg.run(
         "-i",
