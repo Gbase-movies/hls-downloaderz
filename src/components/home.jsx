@@ -34,24 +34,33 @@ export default function HomePage({ seturl, setheaders }) {
     setplaylist();
   }
 
+  // Updated async function for validation
   async function validateAndSetUrl() {
-    toast.loading(`Validating...`, { duration: 800 });
-    let data = await parseHls({ hlsUrl: text, headers: customHeaders });
-    if (!data) {
-      toast.error(`Invalid url, Content possibly not parsed!`);
-      return;
-    }
-    if (data.type === ERROR) {
-      toast.error(data.data);
-    } else if (data.type === PLAYLIST) {
-      if (!data.data.length) {
-        toast.error(`No playlist found in the url`);
-      } else {
-        setplaylist(data.data);
+    try {
+      toast.loading(`Validating...`, { duration: 800 });
+      let data = await parseHls({ hlsUrl: text, headers: customHeaders });
+      
+      if (!data) {
+        toast.error(`Invalid url, Content possibly not parsed!`);
+        return;
       }
-    } else if (data.type === SEGMENT) {
-      seturl(text);
-      setheaders(customHeaders);
+      
+      if (data.type === ERROR) {
+        toast.error(data.data);
+      } else if (data.type === PLAYLIST) {
+        if (!data.data.length) {
+          toast.error(`No playlist found in the url`);
+        } else {
+          setplaylist(data.data);
+        }
+      } else if (data.type === SEGMENT) {
+        seturl(text);
+        setheaders(customHeaders);
+        toast.success("URL validated successfully!");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("An error occurred while validating the URL.");
     }
   }
 
