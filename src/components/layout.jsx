@@ -17,9 +17,9 @@ export default function Layout({ children }) {
             className="font-semibold"
             target="_blank"
             rel="noopener"
-            href="https://github.com/tuhinpal"
+            href="https://swaflix.xyz"
           >
-            Tuhin
+            SWAFLIX
           </a>{" "}
           with{" "}
           <a
@@ -33,7 +33,7 @@ export default function Layout({ children }) {
         </p>
         <div className="flex items-center gap-2 mt-2">
           <a
-            href="https://github.com/tuhinpal/hls-downloader/"
+            href="https://swaflix.xyz"
             target="_blank"
             rel="noopener"
           >
