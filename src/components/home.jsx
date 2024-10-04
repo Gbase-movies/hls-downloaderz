@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogTitle, TextField } from "@mui/material";
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Added useEffect for URL handling
 import { toast } from "react-hot-toast";
 import { ERROR, PLAYLIST, SEGMENT } from "../constant";
 import parseHls from "../lib/parseHls";
@@ -12,6 +12,15 @@ export default function HomePage({ seturl, setheaders }) {
   const [limitationrender, setlimitationrender] = useState(false);
   const [customHeadersRender, setcustomHeadersRender] = useState(false);
   const [customHeaders, setcustomHeaders] = useState({});
+
+  // Fetch URL from query string if available
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlFromQuery = params.get('url');
+    if (urlFromQuery) {
+      settext(urlFromQuery); // Automatically set URL from query string
+    }
+  }, []);
 
   function toggleLimitation() {
     setlimitationrender(!limitationrender);
@@ -27,28 +36,22 @@ export default function HomePage({ seturl, setheaders }) {
 
   async function validateAndSetUrl() {
     toast.loading(`Validating...`, { duration: 800 });
-
-    try {
-      let data = await parseHls({ hlsUrl: text, headers: customHeaders });
-
-      if (!data) {
-        throw new Error(`Invalid URL, unable to parse content`);
+    let data = await parseHls({ hlsUrl: text, headers: customHeaders });
+    if (!data) {
+      toast.error(`Invalid url, Content possibly not parsed!`);
+      return;
+    }
+    if (data.type === ERROR) {
+      toast.error(data.data);
+    } else if (data.type === PLAYLIST) {
+      if (!data.data.length) {
+        toast.error(`No playlist found in the url`);
+      } else {
+        setplaylist(data.data);
       }
-
-      if (data.type === ERROR) {
-        toast.error(data.data);
-      } else if (data.type === PLAYLIST) {
-        if (!data.data.length) {
-          toast.error(`No playlist found in the URL`);
-        } else {
-          setplaylist(data.data);
-        }
-      } else if (data.type === SEGMENT) {
-        seturl(text);
-        setheaders(customHeaders);
-      }
-    } catch (error) {
-      toast.error(error.message || "An unexpected error occurred.");
+    } else if (data.type === SEGMENT) {
+      seturl(text);
+      setheaders(customHeaders);
     }
   }
 
@@ -57,11 +60,11 @@ export default function HomePage({ seturl, setheaders }) {
       <Layout>
         <h1 className="text-3xl lg:text-4xl font-bold">HLS Downloader</h1>
         <h2 className="mt-2 max-w-xl text-center md:text-base text-sm">
-          Download HLS videos in your browser. Enter your{" "}
+          Download hls videos in your browser. Enter your{" "}
           <code className="border boder-gray-200 bg-gray-100 px-1 rounded-sm">
             .m3u8
           </code>{" "}
-          URL to continue.
+          uri to continue.
           <br />
           <span className="cursor-pointer underline" onClick={toggleLimitation}>
             See limitations
@@ -79,10 +82,10 @@ export default function HomePage({ seturl, setheaders }) {
 
         <div className="w-full max-w-3xl mt-5 mb-4">
           <TextField
-            label="Paste HLS URL"
+            label="Paste hls url"
             fullWidth
             size="small"
-            placeholder="Please note it should be a .m3u8 URL"
+            placeholder="Please note it should be a .m3u8 url"
             value={text}
             onChange={(e) => settext(e.target.value)}
             InputProps={{
@@ -109,7 +112,7 @@ export default function HomePage({ seturl, setheaders }) {
         </button>
 
         <i className="max-w-sm text-xs text-gray-500 text-center mt-2.5">
-          * By clicking the above <b>Download</b> button, you agree that you
+          * by clicking the above <b>Download</b> button you are agreed that you
           won't use this service for piracy.
         </i>
       </Layout>
