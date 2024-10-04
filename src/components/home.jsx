@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogTitle, TextField } from "@mui/material";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { ERROR, PLAYLIST, SEGMENT } from "../constant";
 import parseHls from "../lib/parseHls";
@@ -13,15 +13,6 @@ export default function HomePage({ seturl, setheaders }) {
   const [customHeadersRender, setcustomHeadersRender] = useState(false);
   const [customHeaders, setcustomHeaders] = useState({});
 
-  // Function to extract URL from query parameters
-  useEffect(() => {
-    const queryParams = new URLSearchParams(window.location.search);
-    const urlFromParams = queryParams.get("url");
-    if (urlFromParams) {
-      settext(urlFromParams); // Set the URL automatically
-    }
-  }, []);
-
   function toggleLimitation() {
     setlimitationrender(!limitationrender);
   }
@@ -34,33 +25,30 @@ export default function HomePage({ seturl, setheaders }) {
     setplaylist();
   }
 
-  // Updated async function for validation
   async function validateAndSetUrl() {
+    toast.loading(`Validating...`, { duration: 800 });
+
     try {
-      toast.loading(`Validating...`, { duration: 800 });
       let data = await parseHls({ hlsUrl: text, headers: customHeaders });
-      
+
       if (!data) {
-        toast.error(`Invalid url, Content possibly not parsed!`);
-        return;
+        throw new Error(`Invalid URL, unable to parse content`);
       }
-      
+
       if (data.type === ERROR) {
         toast.error(data.data);
       } else if (data.type === PLAYLIST) {
         if (!data.data.length) {
-          toast.error(`No playlist found in the url`);
+          toast.error(`No playlist found in the URL`);
         } else {
           setplaylist(data.data);
         }
       } else if (data.type === SEGMENT) {
         seturl(text);
         setheaders(customHeaders);
-        toast.success("URL validated successfully!");
       }
     } catch (error) {
-      console.error(error);
-      toast.error("An error occurred while validating the URL.");
+      toast.error(error.message || "An unexpected error occurred.");
     }
   }
 
@@ -69,11 +57,11 @@ export default function HomePage({ seturl, setheaders }) {
       <Layout>
         <h1 className="text-3xl lg:text-4xl font-bold">HLS Downloader</h1>
         <h2 className="mt-2 max-w-xl text-center md:text-base text-sm">
-          Download hls videos in your browser. Enter your{" "}
+          Download HLS videos in your browser. Enter your{" "}
           <code className="border boder-gray-200 bg-gray-100 px-1 rounded-sm">
             .m3u8
           </code>{" "}
-          uri to continue.
+          URL to continue.
           <br />
           <span className="cursor-pointer underline" onClick={toggleLimitation}>
             See limitations
@@ -91,10 +79,10 @@ export default function HomePage({ seturl, setheaders }) {
 
         <div className="w-full max-w-3xl mt-5 mb-4">
           <TextField
-            label="Paste hls url"
+            label="Paste HLS URL"
             fullWidth
             size="small"
-            placeholder="Please note it should be a .m3u8 url"
+            placeholder="Please note it should be a .m3u8 URL"
             value={text}
             onChange={(e) => settext(e.target.value)}
             InputProps={{
@@ -121,12 +109,100 @@ export default function HomePage({ seturl, setheaders }) {
         </button>
 
         <i className="max-w-sm text-xs text-gray-500 text-center mt-2.5">
-          * by clicking the above <b>Download</b> button you are agreed that you
+          * By clicking the above <b>Download</b> button, you agree that you
           won't use this service for piracy.
         </i>
       </Layout>
 
-      {/* Other dialogs for playlist, limitations, and custom headers */}
+      <Dialog
+        open={playlist !== undefined}
+        fullWidth
+        maxWidth="sm"
+        onClose={closeQualityDialog}
+      >
+        <DialogTitle className="flex justify-between">
+          <span className="text-xl font-bold">Select quality</span>
+          <button className="text-sm" onClick={closeQualityDialog}>
+            close
+          </button>
+        </DialogTitle>
+        <DialogContent>
+          <div className="flex flex-wrap justify-center items-center">
+            {(playlist || []).map((item) => {
+              return (
+                <div
+                  className="flex justify-between items-center mt-2"
+                  key={item.bandwidth}
+                >
+                  <button
+                    className="mr-2 px-2 py-1 rounded-md bg-black text-white"
+                    onClick={() => {
+                      seturl(item.uri);
+                      setheaders(customHeaders);
+                    }}
+                  >
+                    {item.name}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={limitationrender}
+        onClose={toggleLimitation}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle className="flex justify-between">
+          <span className="text-xl font-bold">Limitations</span>
+          <button className="text-sm" onClick={toggleLimitation}>
+            close
+          </button>
+        </DialogTitle>
+        <DialogContent>
+          <ol className="list-decimal list-inside text-gray-700">
+            {limitations.map((limitation) => (
+              <li
+                key={limitation}
+                dangerouslySetInnerHTML={{ __html: limitation }}
+              />
+            ))}
+          </ol>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={customHeadersRender}
+        onClose={toggleCustomHeaders}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle className="flex justify-between">
+          <span className="text-xl font-bold">Custom headers</span>
+          <button className="text-sm" onClick={toggleCustomHeaders}>
+            close
+          </button>
+        </DialogTitle>
+        <DialogContent>
+          <RenderCustomHeaders
+            customHeaders={customHeaders}
+            setcustomHeader={setcustomHeaders}
+          />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
+
+const limitations = [
+  "It may not work on some browsers, Especially on mobile browsers. <a href='https://caniuse.com/sharedarraybuffer' class='underline' target='_blank' rel='noopener'>See supported browsers</a>.",
+  "This will request video segments from the server for download, but the browser may block the request due to CORS policy. To avoid this, you can try using some extensions.",
+  "It cannot download protected content.",
+  "It does not currently support custom headers.",
+  "Custom cookies will not be possible because the browser will ignore them.",
+  "Performance may be limited by the capabilities of the browser, the device it is running on, and the network connection.",
+  "It is not possible to download live streams.",
+];
