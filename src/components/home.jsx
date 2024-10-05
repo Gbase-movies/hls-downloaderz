@@ -12,16 +12,40 @@ export default function HomePage({ seturl, setheaders }) {
   const [limitationrender, setlimitationrender] = useState(false);
   const [customHeadersRender, setcustomHeadersRender] = useState(false);
   const [customHeaders, setcustomHeaders] = useState({});
+  const [movieTitle, setMovieTitle] = useState(""); // State for movie title
 
   // Fetch URL from query string if available and auto trigger download
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlFromQuery = params.get('url');
+    const tmdbIdFromQuery = params.get('title'); // Get the TMDB ID from the query
+
     if (urlFromQuery) {
       settext(urlFromQuery); // Automatically set URL from query string
       validateAndSetUrl(urlFromQuery); // Auto trigger download
     }
+
+    if (tmdbIdFromQuery) {
+      fetchMovieTitle(tmdbIdFromQuery); // Fetch movie title based on TMDB ID
+    }
   }, []);
+
+  // Function to fetch movie title from TMDB API
+  const fetchMovieTitle = async (tmdbId) => {
+    const API_KEY = 'YOUR_TMDB_API_KEY'; // Replace with your TMDB API key
+    try {
+      const response = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${API_KEY}&language=en-US`);
+      const data = await response.json();
+      if (data.title) {
+        setMovieTitle(data.title); // Set the movie title
+      } else {
+        toast.error("Movie title not found");
+      }
+    } catch (error) {
+      console.error("Error fetching movie title:", error);
+      toast.error("Failed to fetch movie title");
+    }
+  };
 
   function toggleLimitation() {
     setlimitationrender(!limitationrender);
@@ -81,6 +105,9 @@ export default function HomePage({ seturl, setheaders }) {
             Try example
           </span>
         </h2>
+
+        {/* Display movie title if available */}
+        {movieTitle && <h3 className="mt-2 text-xl text-center">{movieTitle}</h3>}
 
         <div className="w-full max-w-3xl mt-5 mb-4">
           <TextField
