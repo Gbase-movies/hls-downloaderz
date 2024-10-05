@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogTitle, TextField } from "@mui/material";
-import { useState, useEffect } from "react";
+import { useState, useEffect } from "react"; // Added useEffect for URL handling
 import { toast } from "react-hot-toast";
 import { ERROR, PLAYLIST, SEGMENT } from "../constant";
 import parseHls from "../lib/parseHls";
@@ -12,19 +12,14 @@ export default function HomePage({ seturl, setheaders }) {
   const [limitationrender, setlimitationrender] = useState(false);
   const [customHeadersRender, setcustomHeadersRender] = useState(false);
   const [customHeaders, setcustomHeaders] = useState({});
-  
-  // Added state for title
-  const [title, setTitle] = useState("");
 
   // Fetch URL from query string if available and auto trigger download
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlFromQuery = params.get('url');
-    const titleFromQuery = params.get('title'); // Get title from query
-
     if (urlFromQuery) {
       settext(urlFromQuery); // Automatically set URL from query string
-      validateAndSetUrl(urlFromQuery, titleFromQuery); // Auto trigger download
+      validateAndSetUrl(urlFromQuery); // Auto trigger download
     }
   }, []);
 
@@ -40,18 +35,14 @@ export default function HomePage({ seturl, setheaders }) {
     setplaylist();
   }
 
-  async function validateAndSetUrl(urlToValidate, title) {
+  async function validateAndSetUrl(urlToValidate) {
     const url = urlToValidate || text; // Use the passed URL or the current input
-    if (title) setTitle(title); // Set title if available
-
     toast.loading(`Validating...`, { duration: 800 });
     let data = await parseHls({ hlsUrl: url, headers: customHeaders });
-    
     if (!data) {
       toast.error(`Invalid url, Content possibly not parsed!`);
       return;
     }
-    
     if (data.type === ERROR) {
       toast.error(data.data);
     } else if (data.type === PLAYLIST) {
@@ -85,7 +76,6 @@ export default function HomePage({ seturl, setheaders }) {
             className="cursor-pointer underline"
             onClick={() => {
               settext("https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8");
-              setTitle("67"); // Set example title
             }}
           >
             Try example
@@ -115,7 +105,7 @@ export default function HomePage({ seturl, setheaders }) {
 
         <button
           className="px-4 py-1.5 bg-gray-900 hover:bg-gray-700 text-white rounded-md disabled:opacity-50"
-          onClick={() => validateAndSetUrl(text, title)} // Pass title to validateAndSetUrl
+          onClick={validateAndSetUrl}
           disabled={typeof SharedArrayBuffer === "undefined"}
         >
           {typeof SharedArrayBuffer === "undefined"
