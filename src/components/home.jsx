@@ -32,7 +32,7 @@ export default function HomePage({ seturl, setheaders }) {
 
   // Function to fetch movie title from TMDB API
   const fetchMovieTitle = async (tmdbId) => {
-    const API_KEY = 'YOUR_TMDB_API_KEY'; // Replace with your TMDB API key
+    const API_KEY = '68e094699525b18a70bab2f86b1fa706'; // Replace with your TMDB API key
     try {
       const response = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${API_KEY}&language=en-US`);
       const data = await response.json();
