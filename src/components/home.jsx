@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogTitle, TextField } from "@mui/material";
+import { useState, useEffect } from "react"; 
 import { toast } from "react-hot-toast";
 import { ERROR, PLAYLIST, SEGMENT } from "../constant";
 import parseHls from "../lib/parseHls";
@@ -12,43 +12,53 @@ export default function HomePage({ seturl, setheaders }) {
   const [limitationrender, setlimitationrender] = useState(false);
   const [customHeadersRender, setcustomHeadersRender] = useState(false);
   const [customHeaders, setcustomHeaders] = useState({});
-  const [tmdbTitle, setTmdbTitle] = useState("HLS Downloader"); // Default title
+  const [title, setTitle] = useState("HLS Downloader"); // Set default title
 
-  // Fetch URL and title from query string and auto trigger download
+  // Fetch TMDb movie or series title from the URL and replace the default title
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlFromQuery = params.get('url');
-    const titleId = params.get('title'); // Get TMDb ID from query
-
-    if (titleId) {
-      fetchTmdbTitle(titleId); // Fetch title from TMDb using the ID
-    }
+    const tmdbId = params.get('title'); // Get the 'title' param which is the TMDb ID
 
     if (urlFromQuery) {
-      settext(urlFromQuery); // Automatically set URL from query string
-      validateAndSetUrl(urlFromQuery); // Auto trigger download
+      settext(urlFromQuery);
+      validateAndSetUrl(urlFromQuery);
+    }
+
+    // Fetch TMDb title if ID is present
+    if (tmdbId) {
+      fetchTmdbTitle(tmdbId);
     }
   }, []);
 
-  // Fetch movie or series title from TMDb API
-  const fetchTmdbTitle = async (id) => {
+  // Function to fetch movie or series title from TMDb API
+  async function fetchTmdbTitle(tmdbId) {
     try {
-      const response = await fetch(
-        `https://api.themoviedb.org/3/movie/${id}?api_key=YOUR_TMDB_API_KEY`
-      );
+      const apiKey = '68e094699525b18a70bab2f86b1fa706'; // Add your TMDb API key here
+      const response = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${apiKey}`);
       const data = await response.json();
-
+      
       if (data && data.title) {
-        setTmdbTitle(data.title); // Set the movie title
-      } else if (data && data.name) {
-        setTmdbTitle(data.name); // Set series name
+        setTitle(data.title); // Set the title based on the TMDb result
       } else {
-        setTmdbTitle("Title Not Found"); // Fallback if no title is found
+        toast.error("Movie title not found.");
       }
     } catch (error) {
-      setTmdbTitle("Error fetching title");
+      toast.error("Failed to fetch the movie title.");
     }
-  };
+  }
+
+  function toggleLimitation() {
+    setlimitationrender(!limitationrender);
+  }
+
+  function toggleCustomHeaders() {
+    setcustomHeadersRender(!customHeadersRender);
+  }
+
+  function closeQualityDialog() {
+    setplaylist();
+  }
 
   async function validateAndSetUrl(urlToValidate) {
     const url = urlToValidate || text;
@@ -75,7 +85,7 @@ export default function HomePage({ seturl, setheaders }) {
   return (
     <>
       <Layout>
-        <h1 className="text-3xl lg:text-4xl font-bold">{tmdbTitle}</h1> {/* Updated Title */}
+        <h1 className="text-3xl lg:text-4xl font-bold">{title}</h1> {/* Use dynamic title */}
         <h2 className="mt-2 max-w-xl text-center md:text-base text-sm">
           Download hls videos in your browser. Enter your{" "}
           <code className="border boder-gray-200 bg-gray-100 px-1 rounded-sm">
@@ -134,7 +144,95 @@ export default function HomePage({ seturl, setheaders }) {
         </i>
       </Layout>
 
-      {/* Dialogs go here as in your original code */}
+      <Dialog
+        open={playlist !== undefined}
+        fullWidth
+        maxWidth="sm"
+        onClose={closeQualityDialog}
+      >
+        <DialogTitle className="flex justify-between">
+          <span className="text-xl font-bold">Select quality</span>
+          <button className="text-sm" onClick={closeQualityDialog}>
+            close
+          </button>
+        </DialogTitle>
+        <DialogContent>
+          <div className="flex flex-wrap justify-center items-center">
+            {(playlist || []).map((item) => {
+              return (
+                <div
+                  className="flex justify-between items-center mt-2"
+                  key={item.bandwidth}
+                >
+                  <button
+                    className="mr-2 px-2 py-1 rounded-md bg-black text-white"
+                    onClick={() => {
+                      seturl(item.uri);
+                      setheaders(customHeaders);
+                    }}
+                  >
+                    {item.name}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={limitationrender}
+        onClose={toggleLimitation}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle className="flex justify-between">
+          <span className="text-xl font-bold">Limitations</span>
+          <button className="text-sm" onClick={toggleLimitation}>
+            close
+          </button>
+        </DialogTitle>
+        <DialogContent>
+          <ol className="list-decimal list-inside text-gray-700">
+            {limitations.map((limitation) => (
+              <li
+                key={limitation}
+                dangerouslySetInnerHTML={{ __html: limitation }}
+              />
+            ))}
+          </ol>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={customHeadersRender}
+        onClose={toggleCustomHeaders}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle className="flex justify-between">
+          <span className="text-xl font-bold">Custom headers</span>
+          <button className="text-sm" onClick={toggleCustomHeaders}>
+            close
+          </button>
+        </DialogTitle>
+        <DialogContent>
+          <RenderCustomHeaders
+            customHeaders={customHeaders}
+            setcustomHeader={setcustomHeaders}
+          />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
+
+const limitations = [
+  "It may not work on some browsers, Especially on mobile browsers. <a href='https://caniuse.com/sharedarraybuffer' class='underline' target='_blank' rel='noopener'>See supported browsers</a>.",
+  "This will request video segments from the server for download, but the browser may block the request due to CORS policy. To avoid this, you can try using some extensions.",
+  "It cannot download protected content.",
+  "It does not currently support custom headers.",
+  "Custom cookies will not be possible because the browser will ignore them.",
+  "Performance may be limited by the capabilities of the browser, the device it is running on, and the network connection.",
+  "It is not possible to download live streams.",
+];
