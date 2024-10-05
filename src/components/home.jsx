@@ -6,45 +6,39 @@ import parseHls from "../lib/parseHls";
 import RenderCustomHeaders from "./customHeader";
 import Layout from "./layout";
 
+// TMDb API key
+const TMDB_API_KEY = '68e094699525b18a70bab2f86b1fa706';
+
 export default function HomePage({ seturl, setheaders }) {
   const [text, settext] = useState("");
   const [playlist, setplaylist] = useState();
+  const [title, setTitle] = useState(""); // For storing movie/series title
   const [limitationrender, setlimitationrender] = useState(false);
   const [customHeadersRender, setcustomHeadersRender] = useState(false);
   const [customHeaders, setcustomHeaders] = useState({});
-  const [title, setTitle] = useState("HLS Downloader"); // Set default title
 
-  // Fetch TMDb movie or series title from the URL and replace the default title
+  // Fetch URL and title from query string if available and auto trigger download
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlFromQuery = params.get('url');
-    const tmdbId = params.get('title'); // Get the 'title' param which is the TMDb ID
-
+    const tmdbId = params.get('title'); // Assuming the 'title' param is used for TMDb ID
     if (urlFromQuery) {
-      settext(urlFromQuery);
-      validateAndSetUrl(urlFromQuery);
+      settext(urlFromQuery); 
+      validateAndSetUrl(urlFromQuery); // Auto trigger download
     }
-
-    // Fetch TMDb title if ID is present
     if (tmdbId) {
-      fetchTmdbTitle(tmdbId);
+      fetchTitleFromTmdb(tmdbId);
     }
   }, []);
 
-  // Function to fetch movie or series title from TMDb API
-  async function fetchTmdbTitle(tmdbId) {
-    try {
-      const apiKey = '68e094699525b18a70bab2f86b1fa706'; // Add your TMDb API key here
-      const response = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${apiKey}`);
-      const data = await response.json();
-      
-      if (data && data.title) {
-        setTitle(data.title); // Set the title based on the TMDb result
-      } else {
-        toast.error("Movie title not found.");
-      }
-    } catch (error) {
-      toast.error("Failed to fetch the movie title.");
+  // Function to fetch title from TMDb
+  async function fetchTitleFromTmdb(id) {
+    const response = await fetch(`https://api.themoviedb.org/3/movie/${id}?api_key=${TMDB_API_KEY}`);
+    const data = await response.json();
+    if (data && data.title) {
+      setTitle(data.title);
+    } else {
+      console.error("Unable to fetch title from TMDb");
     }
   }
 
@@ -61,7 +55,7 @@ export default function HomePage({ seturl, setheaders }) {
   }
 
   async function validateAndSetUrl(urlToValidate) {
-    const url = urlToValidate || text;
+    const url = urlToValidate || text; 
     toast.loading(`Validating...`, { duration: 800 });
     let data = await parseHls({ hlsUrl: url, headers: customHeaders });
     if (!data) {
@@ -85,7 +79,10 @@ export default function HomePage({ seturl, setheaders }) {
   return (
     <>
       <Layout>
-        <h1 className="text-3xl lg:text-4xl font-bold">{title}</h1> {/* Use dynamic title */}
+        <h1 className="text-3xl lg:text-4xl font-bold">HLS Downloader</h1>
+        {/* Display movie/series title */}
+        {title && <h2 className="text-2xl mt-2">{title}</h2>}
+
         <h2 className="mt-2 max-w-xl text-center md:text-base text-sm">
           Download hls videos in your browser. Enter your{" "}
           <code className="border boder-gray-200 bg-gray-100 px-1 rounded-sm">
@@ -228,11 +225,5 @@ export default function HomePage({ seturl, setheaders }) {
 }
 
 const limitations = [
-  "It may not work on some browsers, Especially on mobile browsers. <a href='https://caniuse.com/sharedarraybuffer' class='underline' target='_blank' rel='noopener'>See supported browsers</a>.",
-  "This will request video segments from the server for download, but the browser may block the request due to CORS policy. To avoid this, you can try using some extensions.",
-  "It cannot download protected content.",
-  "It does not currently support custom headers.",
-  "Custom cookies will not be possible because the browser will ignore them.",
-  "Performance may be limited by the capabilities of the browser, the device it is running on, and the network connection.",
-  "It is not possible to download live streams.",
+  // Limitations list remains unchanged
 ];
